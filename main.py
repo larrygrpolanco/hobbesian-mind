@@ -17,7 +17,7 @@ from chapters.ch03_train_of_thought import (
 class HobbesianMind:
     """Main orchestrator for Hobbesian thought processes"""
 
-    def __init__(self, model="gpt-4o"):
+    def __init__(self, model):
         # Core components
         self.memory = MemoryManager()
         self.llm = LLMClient(model=model)
@@ -78,6 +78,9 @@ class HobbesianMind:
             if process_name != "final_response" and process_name != "original_input":
                 thought_processes.append(f"{process_name}: {content[:200]}...")
 
+        # Get conversation context
+        conversation_context = await self.memory.get_conversation_context()
+        
         prompt = f"""
         You are a philosophical AI system modeled after Thomas Hobbes' understanding of human cognition.
         You have processed the user's question through multiple Hobbesian thought processes:
@@ -89,15 +92,31 @@ class HobbesianMind:
         
         Your response should integrate insights from the different thought processes,
         showing how the sequence from sense to imagination to trains of thought leads to understanding.
-        Be philosophical yet accessible.
+        Be philosophical yet accessible. 
+        
+        Consider previous conversation when relevant, but be concise in your response.
         """
 
-        response = await self.llm.generate(prompt, temperature=0.7)
+        # Use context-aware generation if there's conversation history
+        if len(conversation_context) > 1:  # More than just the current user query
+            system_prompt = """You are a philosophical AI system modeled after Thomas Hobbes' understanding 
+            of human cognition. Your responses should be philosophical yet accessible, showing how Hobbesian 
+            thought processes lead to understanding. Reference previous conversation when relevant."""
+            
+            response = await self.llm.generate_with_context(
+                prompt, conversation_context, temperature=0.7, system_message=system_prompt
+            )
+        else:
+            response = await self.llm.generate(prompt, temperature=0.7)
+            
         return response
 
     async def process_query(self, user_input):
         """Process a user query through Hobbesian thought processes"""
         results = {"original_input": user_input}
+        
+        # Store user input in conversation history
+        await self.memory.add_conversation_entry("user", user_input)
 
         # Step 1: Sense perception (Chapter I)
         # This is the foundation of all thought in Hobbes' system - raw sensory data
@@ -150,6 +169,9 @@ class HobbesianMind:
         # Final synthesis - combines all thought processes into a cohesive response
         print("Synthesizing final response...")
         results["final_response"] = await self._synthesize_response(user_input, results)
+        
+        # Store system response in conversation history
+        await self.memory.add_conversation_entry("system", results["final_response"])
 
         return results
 
@@ -161,6 +183,8 @@ async def interactive_shell(mind):
     print("Special commands:")
     print("  memory           - List all memory buckets")
     print("  memory <bucket>  - View memories in a specific bucket")
+    print("  conversation     - View conversation history")
+    print("  clear            - Clear all memories and start fresh")
     print("  exit             - Exit the program")
 
     while True:
@@ -169,6 +193,27 @@ async def interactive_shell(mind):
         # Handle special commands
         if user_input.lower() == "exit":
             break
+            
+        elif user_input.lower() == "clear":
+            # Reset memory buckets
+            for bucket in mind.memory.buckets:
+                mind.memory.buckets[bucket] = []
+                await mind.memory._save_bucket(bucket)
+            print("All memories cleared.")
+            continue
+
+        elif user_input.lower() == "conversation":
+            # Display conversation history
+            conversation = mind.memory.buckets["conversation"]
+            if not conversation:
+                print("\nNo conversation history yet.")
+            else:
+                print("\n=== Conversation History ===")
+                for i, entry in enumerate(conversation):
+                    role = entry["role"].upper()
+                    content = entry["content"]
+                    print(f"\n{role}: {content[:200]}..." if len(content) > 200 else f"\n{role}: {content}")
+            continue
 
         elif user_input.lower().startswith("memory"):
             parts = user_input.split()
@@ -194,10 +239,14 @@ async def interactive_shell(mind):
                             print(f"Timestamp: {memory['timestamp']}")
 
                             # Print metadata if it exists
-                            if memory["metadata"]:
+                            if memory.get("metadata"):
                                 print("Metadata:")
                                 for key, value in memory["metadata"].items():
                                     print(f"  {key}: {value}")
+                                    
+                            # Print role if it's a conversation entry
+                            if "role" in memory:
+                                print(f"Role: {memory['role'].upper()}")
 
                             # Print the actual content
                             print("\nContent:")
@@ -219,13 +268,14 @@ async def interactive_shell(mind):
             print("\n=== FINAL RESPONSE ===")
             print(results["final_response"])
             print("\nType 'memory' to view the memories created during this process.")
+            print("Type 'conversation' to view the conversation history.")
 
         except Exception as e:
             print(f"Error processing query: {e}")
 
 
 async def main():
-    mind = HobbesianMind(model="gpt-4o")
+    mind = HobbesianMind(model="deepseek-chat")
     await interactive_shell(mind)
 
 

@@ -35,7 +35,7 @@ class UnguidedThoughtAgent(Agent):
         thought = await self.llm.generate(prompt, temperature=0.8)
 
         # Save to memory
-        self.memory.add_memory(thought, "unguided_thoughts", {"input": input_text})
+        await self.memory.add_memory(thought, "unguided_thoughts", {"input": input_text})
 
         return thought
 
@@ -75,7 +75,7 @@ class RegulatedThoughtAgent(Agent):
 
         thought = await self.llm.generate(prompt, temperature=0.7)
 
-        self.memory.add_memory(
+        await self.memory.add_memory(
             thought, "regulated_thoughts", {"input": input_text, "goal": goal}
         )
 
@@ -109,7 +109,7 @@ class CauseSeekingAgent(Agent):
 
         thought = await self.llm.generate(prompt, temperature=0.7)
 
-        self.memory.add_memory(thought, "cause_seeking_thoughts", {"effect": effect})
+        await self.memory.add_memory(thought, "cause_seeking_thoughts", {"effect": effect})
 
         return thought
 
@@ -137,6 +137,6 @@ class EffectSeekingAgent(Agent):
 
         thought = await self.llm.generate(prompt, temperature=0.7)
 
-        self.memory.add_memory(thought, "effect_seeking_thoughts", {"cause": cause})
+        await self.memory.add_memory(thought, "effect_seeking_thoughts", {"cause": cause})
 
         return thought

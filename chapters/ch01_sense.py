@@ -14,8 +14,6 @@ class SenseAgent(Agent):
         Process the "sensory input" (user's text) to extract its qualities and properties
         In Hobbes' terms, this creates the initial "appearance" or "fancy" in the mind
         """
-        if not self.enabled:
-            return f"[{self.name} agent is disabled]"
 
         prompt = f"""
         You are emulating the process of sense perception as described by Thomas Hobbes in Leviathan.
@@ -32,8 +30,7 @@ class SenseAgent(Agent):
         3. The relationships between these elements
         4. Any emotional or value-laden aspects of the input
         
-        Format your response as a structured analysis of the "sensory impression" received. This will serve
-        as the foundation for all other thought processes.
+        Format your response as an analysis of the "sensory impression" received with the first 10 words that come to mind. This will serve as the foundation for all other thought processes. Use only 10 words, they do not have to form a coherent sentence, these can be sensations, feelings, images, ideas, etc.
         """
 
         sense_data = await self.llm.generate(prompt, temperature=0.7)

@@ -13,8 +13,6 @@ class SimpleImaginationAgent(Agent):
         Process sense data into simple imagination - the decaying sense that persists
         after the sensory stimulus is gone
         """
-        if not self.enabled:
-            return f"[{self.name} agent is disabled]"
 
         # Retrieve recent sense impressions to simulate "memory"
         recent_senses = await self.memory.get_recent_memories("sense_impressions", 3)
@@ -70,8 +68,6 @@ class CompoundImaginationAgent(Agent):
         Process simple imagination into compound imagination by combining elements
         from different memories and impressions
         """
-        if not self.enabled:
-            return f"[{self.name} agent is disabled]"
 
         # Get recent simple imaginations and sense impressions
         recent_imaginations = await self.memory.get_recent_memories(
