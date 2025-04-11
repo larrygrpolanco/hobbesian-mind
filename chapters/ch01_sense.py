@@ -8,6 +8,23 @@ class SenseAgent(Agent):
     "The original of them all is that which we call sense, (for there is no conception in a man's mind
     which hath not at first, totally or by parts, been begotten upon the organs of sense)."
     """
+    
+    def __init__(self, name, llm_client, memory_manager):
+        # Configure memory for sense impressions which are fleeting (only keep 3)
+        memory_config = {
+            "sense_impressions": {
+                "max_memories": 3,  # Sense impressions are fleeting, keep fewer
+                "summary_prompt": """
+                Summarize these fleeting sensory impressions as they begin to decay from the mind:
+                
+                {entries}
+                
+                Create a brief impression of what remains after these sensations have mostly faded.
+                As Hobbes notes, sensations decay quickly as they transition to imagination.
+                """
+            }
+        }
+        super().__init__(name, llm_client, memory_manager, memory_config)
 
     async def process(self, input_text):
         """
@@ -24,13 +41,9 @@ class SenseAgent(Agent):
         
         "{input_text}"
         
-        Analyze this input as if it were a sensory impression received by the mind, identifying:
-        1. The key concepts or objects presented
-        2. The qualities or properties of these concepts/objects
-        3. The relationships between these elements
-        4. Any emotional or value-laden aspects of the input
-        
-        Format your response as an analysis of the "sensory impression" received with the first 10 words that come to mind. This will serve as the foundation for all other thought processes. Use only 10 words, they do not have to form a coherent sentence, these can be sensations, feelings, images, ideas, etc.
+        Analyze this input as if it were a sensory impression received by the mind, as Hobbes puts it "The cause of sense is the external body, or object, which presseth the organ proper to each sense, either immediately, as in the taste and touch; or mediately, as in seeing, hearing, and smelling: which pressure, by the mediation of nerves and other strings and membranes of the body, continued inwards to the brain and heart, causeth there a resistance, or counter-pressure, or endeavour of the heart to deliver itself: which en- deavour, because outward, seemeth to be some matter without. And this seeming, or fancy, is that which men call sense; and consisteth, as to the eye, in a light, or colour figured; to the ear, in a sound; to the nostril, in an odour; to the tongue and palate, in a savour; and to the rest of the body, in heat, cold, hardness, softness, and such other qualities as we discern by feeling."
+
+        Format your response as a "sensory impression received by the mind" with the first 20 words that come to mind. This will serve as the foundation for all other thought processes. Use only 20 words, they can be phrases, things, sensations, feelings, images, ideas, etc.
         """
 
         sense_data = await self.llm.generate(prompt, temperature=0.7)
